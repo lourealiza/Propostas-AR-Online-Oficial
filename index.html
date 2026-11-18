@@ -72,6 +72,22 @@
     <legend>Dados do cliente</legend>
     <div class="grid">
       <div>
+        <label for="oportunidade">Nº da oportunidade no CRM</label>
+        <input type="text" id="oportunidade" placeholder="como aparece no CRM">
+      </div>
+      <div>
+        <label for="cnpj">CNPJ</label>
+        <input type="text" id="cnpj" placeholder="Ex.: 00.000.000/0001-00">
+      </div>
+      <div class="full">
+        <div class="numero-box">
+          <button type="button" class="btn-sec" id="btnCrm">Buscar no CRM</button>
+          <select id="crmEscolha" style="display: none; max-width: 420px"></select>
+          <span class="hint" id="crmStatus"></span>
+        </div>
+        <div class="hint">Busque pelo número da oportunidade ou pelo CNPJ. Se os dois estiverem preenchidos, a busca usa o número. O número da oportunidade vira o número da proposta, seguido de /ano. O CNPJ serve só para a busca e não aparece na proposta.</div>
+      </div>
+      <div>
         <label for="cliente">Nome do contato</label>
         <input type="text" id="cliente" placeholder="Ex.: Maria Silva">
       </div>
@@ -106,6 +122,62 @@
         <label for="comercialEmail">E-mail</label>
         <input type="email" id="comercialEmail" placeholder="Ex.: abi@ar-online.com.br">
         <div class="hint">Ficam salvos neste navegador para as próximas propostas.</div>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Modalidade de contratação</legend>
+    <div class="grid">
+      <div>
+        <label for="modalidade">Modalidade</label>
+        <select id="modalidade">
+          <option value="mensal" selected>Mensal — franquia pós-paga, zera no dia 1</option>
+          <option value="anual">Anual — franquia anual, 10% de desconto à vista</option>
+          <option value="saude">Saúde ANS — mensal ou anual conforme escolha</option>
+        </select>
+      </div>
+      <div id="grpSubModalidade" style="display:none">
+        <label for="subModalidade">Periodicidade (Saúde)</label>
+        <select id="subModalidade">
+          <option value="mensal" selected>Mensal</option>
+          <option value="anual">Anual</option>
+        </select>
+      </div>
+    </div>
+    <div id="avisoSaude" style="display:none;margin-top:8px" class="hint" style="color:#b00020">
+      ⚠️ Saúde ANS: texto da carta ainda pendente de validação pelo Jurídico. O PDF não será gerado para cliente enquanto esse texto não for aprovado.
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Contexto do cliente (para personalizar a carta e o desafio)</legend>
+    <div class="grid">
+      
+      <div class="full">
+        <label for="contexto">Contexto da carta (opcional)</label>
+        <input type="text" id="contexto" placeholder="Ex.: segmento, regra a cumprir ou o que motivou a conversa">
+      </div>
+      <div>
+        <label for="tipoComunicacao">Tipo de comunicação atual</label>
+        <input type="text" id="tipoComunicacao" placeholder="Ex.: carta registrada, e-mail simples, notificação por app">
+      </div>
+      <div>
+        <label for="processoAtual">Processo atual descrito pelo cliente</label>
+        <input type="text" id="processoAtual" placeholder="Ex.: imprime, envia pelos Correios, aguarda AR físico">
+      </div>
+      <div>
+        <label for="impactoAtual">Custo / prazo atual (impacto declarado)</label>
+        <input type="text" id="impactoAtual" placeholder="Ex.: R$ 12/carta, 7 dias de prazo">
+      </div>
+      <div>
+        <label for="dataReuniao">Data da reunião de validação</label>
+        <input type="date" id="dataReuniao">
+        <div class="hint">Aparece nos próximos passos: "reunião até [DATA]".</div>
+      </div>
+      <div>
+        <label for="dataValidade">Proposta válida até</label>
+        <input type="date" id="dataValidade">
       </div>
     </div>
   </fieldset>

@@ -148,8 +148,20 @@
     });
   }
 
+  function numeroOportunidade() {
+    var el = $("oportunidade");
+    return el ? el.value.trim() : "";
+  }
+
+  // Com oportunidade informada, o numero da proposta e "<oportunidade>/<ano>".
+  // Sem ela, continua valendo o contador OPT.
   function atualizaPrev() {
     var ano = anoDaData($("data").value);
+    var op = numeroOportunidade();
+    if (op) {
+      $("numeroPrev").textContent = op + "/" + ano;
+      return;
+    }
     var base = numeroReservado || (parseInt(localStorage.getItem("arpro_seq_" + ano) || "0", 10) + 1);
     $("numeroPrev").textContent = formataNumero(base, ano);
   }
@@ -347,6 +359,109 @@
     $("visorFechar").addEventListener("click", function () { visor.remove(); });
   }
 
+  // ------------------------------------------------------------- modalidade / blocos variáveis
+  var PLANOS_KEYS = Object.keys(PLANOS); // ordem de inserção = ordem crescente de volume
+
+  function vizinhos(sel) {
+    var idx = PLANOS_KEYS.indexOf(sel);
+    if (idx < 0) idx = PLANOS_KEYS.indexOf("1000");
+    var result = [];
+    var abaixo = idx > 0 ? PLANOS_KEYS[idx - 1] : null;
+    var acima  = idx < PLANOS_KEYS.length - 1 ? PLANOS_KEYS[idx + 1] : null;
+    if (abaixo) result.push({ key: abaixo, destaque: false });
+    result.push({ key: sel,    destaque: true  });
+    if (acima)  result.push({ key: acima,  destaque: false });
+    return result;
+  }
+
+  function fmtMensal(key) {
+    return PLANOS[key] ? PLANOS[key].mensal : "";
+  }
+
+  function fmtAnual(key) {
+    // label de volume em ARs/ano; dinheiro ainda vem da coluna mensal
+    var vol = key === "1000000" ? "1.000.000 ou mais" : fmtMilhar(String(parseInt(key, 10) * 12));
+    return vol;
+  }
+
+  function fmtAVistaAnual(key) {
+    // à vista = 12 × mensal × 0,90
+    var p = PLANOS[key];
+    if (!p) return "";
+    var raw = soNumero(p.mensal).replace(/\./g, "").replace(",", ".");
+    var total = parseFloat(raw) * 12;
+    var avista = total * 0.9;
+    function brl(v) {
+      return "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "/ano";
+    }
+    return brl(avista);
+  }
+
+  function fmtTotalAnual(key) {
+    var p = PLANOS[key];
+    if (!p) return "";
+    var raw = soNumero(p.mensal).replace(/\./g, "").replace(",", ".");
+    var total = parseFloat(raw) * 12;
+    return "R$ " + total.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "/ano";
+  }
+
+  function linhaInvestimento(key, modalidade) {
+    var p = PLANOS[key];
+    if (!p) return "";
+    if (modalidade === "anual") {
+      var volAno = fmtAnual(key);
+      return "Franquia: " + volAno + " ARs/ano — " + soNumero(p.mensal) + "/mês ("
+        + fmtTotalAnual(key) + "; à vista " + fmtAVistaAnual(key) + ") — excedente " + p.excedente + "/AR";
+    }
+    // mensal e saúde
+    var volMes = key === "1000000" ? "1.000.000 ou mais" : fmtMilhar(key);
+    return "Franquia: " + volMes + " ARs/mês — " + soNumero(p.mensal) + "/mês — excedente " + p.excedente + "/AR";
+  }
+
+  function montaVizinhasHtml(sel, modalidade) {
+    var vz = vizinhos(sel === "custom" ? "1000" : sel);
+    return vz.map(function (v) {
+      var linha = linhaInvestimento(v.key, modalidade);
+      return v.destaque
+        ? "<strong>" + linha + "</strong>"
+        : "<span style=\"opacity:.7\">" + linha + "</span>";
+    }).join("<br>");
+  }
+
+  function textoCancelamento(modalidade) {
+    if (modalidade === "anual") {
+      return "Há fidelidade pelo prazo do contrato. No plano parcelado, a multa corresponde ao "
+        + "percentual já utilizado multiplicado pelo valor restante. No pagamento à vista, não há "
+        + "reembolso dos créditos não utilizados.";
+    }
+    // mensal e saúde
+    return "Sem fidelidade. O cancelamento é solicitado por e-mail ao Financeiro. O acesso permanece "
+      + "disponível por até 30 dias para exportação das evidências e, em seguida, é suspenso.";
+  }
+
+  function modalidadeEfetiva() {
+    var m = $("modalidade") ? $("modalidade").value : "mensal";
+    if (m === "saude") {
+      var sub = $("subModalidade") ? $("subModalidade").value : "mensal";
+      return sub; // para cálculos de preço usa a submodalidade
+    }
+    return m;
+  }
+
+  // exibe/oculta grupo de submodalidade e aviso Saúde
+  function atualizaModalidade() {
+    var m = $("modalidade") ? $("modalidade").value : "mensal";
+    var grp = $("grpSubModalidade");
+    var aviso = $("avisoSaude");
+    if (grp) grp.style.display = m === "saude" ? "" : "none";
+    if (aviso) aviso.style.display = m === "saude" ? "" : "none";
+  }
+
+  if ($("modalidade")) {
+    $("modalidade").addEventListener("change", atualizaModalidade);
+    atualizaModalidade();
+  }
+
   var FAIXA = {
     "50": "50", "100": "100", "150": "150", "250": "250", "500": "500", "750": "750",
     "1000": "1.000", "1500": "1.500", "2000": "2.000", "5000": "5.000", "7000": "7.000",
@@ -408,6 +523,7 @@
     var doc = "<!DOCTYPE html><html lang=\"pt-BR\"><head><meta charset=\"utf-8\">"
       + "<link href=\"https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap\" rel=\"stylesheet\">"
       + "<style>@page{size:794px 1123px;margin:0}"
+      + (typeof ESTILO_PAGINA !== "undefined" ? ESTILO_PAGINA : "")
       + "html,body{margin:0;padding:0;background:#fff}"
       + ".folha,.folha *{-webkit-print-color-adjust:exact;print-color-adjust:exact;font-family:Poppins,Arial,sans-serif}"
       + ".folha{width:794px;height:1123px;overflow:hidden;page-break-after:always;break-after:page;box-sizing:border-box;background:#fff}"
@@ -425,6 +541,7 @@
       var canal = el.getAttribute("data-canal");
       if (!ativos[canal]) el.remove();
     });
+    dom.querySelectorAll('[data-vazio="1"]').forEach(function (el) { el.remove(); });
     var grade = dom.querySelector("[data-canais]");
     if (grade) {
       var n = grade.children.length || 1;
@@ -458,6 +575,233 @@
     return "<!DOCTYPE html>\n" + dom.documentElement.outerHTML;
   }
 
+  // ------------------------------------------------------------- CRM (Vtiger)
+  // A consulta passa pelo servidor local (servidor-pdf.ps1), que le as
+  // credenciais do arquivo .env. A chave de acesso nunca chega a esta pagina.
+  var CRM_MSG = {
+    sem_config: "Não achei as credenciais do CRM. Cada pessoa grava o próprio arquivo .env em AppData\\Roaming\\AR Online\\Gerador de Propostas.",
+    numero_invalido: "Confira o número da oportunidade.",
+    cnpj_invalido: "Confira o CNPJ: ele precisa ter 14 caracteres.",
+    nao_encontrada: "Não achei oportunidade com esse número no CRM.",
+    cnpj_nao_encontrado: "Não achei organização com esse CNPJ no CRM. Tente pelo número da oportunidade.",
+    sem_oportunidade: "Achei a organização no CRM, mas ela não tem oportunidade.",
+    acesso_negado: "O CRM recusou o acesso. Confira o login e a chave no arquivo .env.",
+    falha_crm: "Não consegui consultar o CRM agora."
+  };
+
+  function escondeEscolha() {
+    var sel = $("crmEscolha");
+    sel.innerHTML = "";
+    sel.style.display = "none";
+  }
+
+  function mostraEscolha(lista) {
+    var sel = $("crmEscolha");
+    sel.innerHTML = "";
+    var primeira = document.createElement("option");
+    primeira.value = "";
+    primeira.textContent = "Escolha a oportunidade...";
+    sel.appendChild(primeira);
+    lista.forEach(function (it) {
+      var o = document.createElement("option");
+      o.value = it.numero;
+      o.textContent = it.numero + " — " + (it.nome || "sem nome") + (it.estagio ? " (" + it.estagio + ")" : "");
+      sel.appendChild(o);
+    });
+    sel.style.display = "";
+  }
+
+  // Preenche o formulario com o que veio do CRM e devolve o aviso.
+  function aplicaCrm(j) {
+    var partes = [];
+    if (j.numero) $("oportunidade").value = j.numero;
+    if (j.oportunidade) partes.push("Oportunidade: " + j.oportunidade + ".");
+    if (j.empresaSituacao === "preenchida") {
+      $("empresa").value = j.empresa;
+      partes.push("Empresa preenchida.");
+    } else if (j.empresaSituacao === "sem_vinculo") {
+      partes.push("A oportunidade não tem empresa vinculada no CRM.");
+    } else {
+      partes.push("Não consegui ler a empresa no CRM.");
+    }
+    if (j.cnpjSituacao === "preenchido") {
+      $("cnpj").value = j.cnpj;
+      partes.push("CNPJ preenchido.");
+    } else if (j.cnpjSituacao === "vazio") {
+      partes.push("O CNPJ está em branco no CRM.");
+    } else if (j.cnpjSituacao === "nao_lido") {
+      partes.push("Não consegui ler o CNPJ no CRM.");
+    }
+    atualizaPrev();
+    return partes.join(" ");
+  }
+
+  async function consultaCrm(param, valor) {
+    var aviso = $("crmStatus");
+    if (location.protocol !== "http:") {
+      aviso.textContent = "Abra o gerador pelo Iniciar.bat para buscar no CRM.";
+      return;
+    }
+    var btn = $("btnCrm");
+    btn.disabled = true;
+    aviso.textContent = "Buscando no CRM...";
+    try {
+      var r = await fetch("/crm?" + param + "=" + encodeURIComponent(valor), { cache: "no-store" });
+      var j = await r.json();
+      if (!j.ok) {
+        escondeEscolha();
+        aviso.textContent = CRM_MSG[j.codigo] || CRM_MSG.falha_crm;
+        return;
+      }
+      if (j.varias) {
+        mostraEscolha(j.lista || []);
+        aviso.textContent = "Esse CNPJ tem mais de uma oportunidade. Escolha uma na lista."
+          + (j.limite ? " A lista mostra só as mais recentes." : "");
+        return;
+      }
+      escondeEscolha();
+      aviso.textContent = aplicaCrm(j);
+    } catch (e) {
+      aviso.textContent = CRM_MSG.falha_crm;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // Com os dois campos preenchidos, a busca usa o numero da oportunidade.
+  function buscarCrm() {
+    var num = numeroOportunidade();
+    var cnpj = $("cnpj").value.trim();
+    if (num) return consultaCrm("numero", num);
+    if (cnpj) return consultaCrm("cnpj", cnpj);
+    $("crmStatus").textContent = "Digite o número da oportunidade ou o CNPJ.";
+  }
+
+  if ($("btnCrm")) {
+    $("btnCrm").addEventListener("click", buscarCrm);
+    $("crmEscolha").addEventListener("change", function () {
+      var num = $("crmEscolha").value;
+      if (num) consultaCrm("numero", num);
+    });
+    $("oportunidade").addEventListener("input", atualizaPrev);
+  }
+
+  function campo(id) {
+    var el = $(id);
+    return el ? el.value.trim() : "";
+  }
+
+  function celulaFaixa(key, anual) {
+    if (!key || !PLANOS[key]) return { vazio: "1", vol: "", unit: "", mensal: "", exced: "" };
+    var p = PLANOS[key];
+    var vol = anual ? fmtAnual(key) : (key === "1000000" ? "1.000.000 ou mais" : fmtMilhar(key));
+    return { vazio: "0", vol: vol, unit: soNumero(p.unit), mensal: soNumero(p.mensal), exced: soNumero(p.excedente) };
+  }
+
+  function montaDados(numero, ativos) {
+    var plano = $("plano").value;
+    var modalidade = $("modalidade") ? $("modalidade").value : "mensal";
+    var efetiva = modalidadeEfetiva();
+    var anual = efetiva === "anual";
+    var vazia = { vazio: "1", vol: "", unit: "", mensal: "", exced: "" };
+    var meio, abaixo, acima;
+    if (plano === "custom" || !PLANOS[plano]) {
+      abaixo = vazia;
+      acima = vazia;
+      meio = {
+        vazio: "0",
+        vol: campo("franquia") || "—",
+        unit: valorUnitario(),
+        mensal: soNumero($("valorMensal").value),
+        exced: soNumero($("valorExcedente").value)
+      };
+    } else {
+      var vz = vizinhos(plano);
+      abaixo = vz.length > 1 && !vz[0].destaque ? celulaFaixa(vz[0].key, anual) : vazia;
+      var escolhida = vz.filter(function (v) { return v.destaque; })[0];
+      meio = celulaFaixa(escolhida ? escolhida.key : plano, anual);
+      var ultima = vz[vz.length - 1];
+      acima = ultima && !ultima.destaque ? celulaFaixa(ultima.key, anual) : vazia;
+    }
+    function linha(prefixo, c) {
+      var o = {};
+      o[prefixo + "_VAZIO"] = c.vazio;
+      o[prefixo + "_VOL"] = c.vol;
+      o[prefixo + "_UNIT"] = c.unit;
+      o[prefixo + "_MENSAL"] = c.mensal;
+      o[prefixo + "_EXCED"] = c.exced;
+      return o;
+    }
+    var nomes = [];
+    if (ativos.email) nomes.push("AR-Email e AR-SMS");
+    if (ativos.whats) nomes.push("AR-Whatsapp");
+    if (ativos.voz) nomes.push("AR-Voz");
+    if (ativos.cartas) nomes.push("AR-Cartas");
+    var rotulo = (plano === "custom" || !PLANOS[plano])
+      ? (campo("franquia") || "—")
+      : (anual ? fmtAnual(plano) : (campo("franquia") || rotuloPlano(plano)));
+    var unidade = anual ? "ARs/ano" : "ARs/mês";
+    var modalidadeTxt = efetiva === "anual"
+      ? "Franquia anual; zera no aniversário do contrato; 10% de desconto à vista"
+      : "Franquia pós-paga mensal; zera no dia 1";
+    if (modalidade === "saude") modalidadeTxt = "Saúde ANS — " + modalidadeTxt;
+    var setupFecha = !(ativos.whats || ativos.voz);
+    var setupTotal = 0;
+    if (ativos.email) setupTotal += 1600;
+    if (ativos.cartas) setupTotal += 250;
+    var setupTxt = setupFecha
+      ? ("R$ " + setupTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+      : "não fecha: há setup ainda não confirmado";
+    var avista = "";
+    if (anual && PLANOS[plano]) avista = "À vista (10%): " + fmtAVistaAnual(plano) + ".";
+    var contexto = campo("contexto");
+    var impacto = campo("impactoAtual");
+    var whatsSaude = modalidade === "saude" && ativos.whats;
+    var dados = {
+      NUMERO: numero,
+      DATA: dataPorExtenso($("data").value),
+      CLIENTE: campo("cliente"),
+      EMPRESA: campo("empresa"),
+      COMERCIAL: campo("comercial"),
+      TEL: campo("comercialTel"),
+      EMAIL: campo("comercialEmail"),
+      VOLUME: campo("franquia"),
+      MENSAL: soNumero($("valorMensal").value),
+      UNITARIO: valorUnitario(),
+      EXCEDENTE: soNumero($("valorExcedente").value),
+      FRASE_CAPA: campo("fraseCapa") || "Comprovar cada envio, pelo canal certo, com registro ICP-Brasil.",
+      VALIDADE: campo("dataValidade") ? dataPorExtenso(campo("dataValidade")) : "30 dias após a emissão",
+      VOLUME_CARTA: campo("franquia") || "o volume informado",
+      TIPO_COMUNICACAO: campo("tipoComunicacao") || "comunicações",
+      CONTEXTO: contexto,
+      CONTEXTO_VAZIO: contexto ? "0" : "1",
+      PROCESSO_ATUAL: campo("processoAtual") || "—",
+      IMPACTO: impacto,
+      IMPACTO_VAZIO: impacto ? "0" : "1",
+      CANAIS_CONTRATADOS: nomes.join(", ") || "—",
+      PERIODO_GUARDA: "12 meses",
+      MODALIDADE_TXT: modalidadeTxt,
+      VOLUME_LINHA: rotulo + " " + unidade,
+      SETUP_EMAIL: "R$ 1.600,00",
+      SETUP_WHATS: "não confirmado",
+      MENSAL_WHATS: "não confirmado",
+      SETUP_VOZ: "a partir de R$ 450,00",
+      SETUP_CARTAS: "R$ 250,00",
+      SETUP_TOTAL: setupTxt,
+      WHATS_CONTINGENCIA: whatsSaude ? "Recomendamos contratar dois números de AR-Whatsapp para contingência." : "",
+      WHATS_VAZIO: whatsSaude ? "0" : "1",
+      ROTULO_VOLUME: anual ? "Volume/ano" : "Volume/mês",
+      AVISTA: avista,
+      DATA_REUNIAO: campo("dataReuniao") ? dataPorExtenso(campo("dataReuniao")) : "a combinar",
+      PRAZO_HOMOLOGACAO: "conforme o canal (anexo A4)",
+      CANCELAMENTO: textoCancelamento(efetiva)
+    };
+    [linha("V1", abaixo), linha("V2", meio), linha("V3", acima)].forEach(function (parte) {
+      Object.keys(parte).forEach(function (k) { dados[k] = parte[k]; });
+    });
+    return dados;
+  }
+
   // ------------------------------------------------------------- gerar
   function valida() {
     var falta = [];
@@ -467,6 +811,7 @@
     if (!$("comercial").value.trim()) falta.push("seu nome");
     if (!$("canalEmail").checked && !$("canalWhats").checked &&
         !$("canalVoz").checked && !$("canalCartas").checked) falta.push("ao menos um canal");
+    if ($("modalidade") && $("modalidade").value === "saude") falta.push("Saúde ANS: carta pendente de validação — não gerar PDF para cliente ainda");
     return falta;
   }
 
@@ -486,27 +831,19 @@
     var nomePdf = "";
     try {
       var ano = anoDaData($("data").value);
-      var n = $("numeroManual").value.trim() ? null : await reservaNumero(ano);
-      var numero = $("numeroManual").value.trim() || formataNumero(n, ano);
+      var manual = $("numeroManual").value.trim();
+      var op = numeroOportunidade();
+      var numero;
+      if (manual) numero = manual;
+      else if (op) numero = op + "/" + ano; // numero da oportunidade no lugar do OPT
+      else numero = formataNumero(await reservaNumero(ano), ano);
       var ativos = {
         email: $("canalEmail").checked,
         whats: $("canalWhats").checked,
         voz: $("canalVoz").checked,
         cartas: $("canalCartas").checked
       };
-      var dados = {
-        NUMERO: numero,
-        DATA: dataPorExtenso($("data").value),
-        CLIENTE: $("cliente").value.trim(),
-        EMPRESA: $("empresa").value.trim(),
-        COMERCIAL: $("comercial").value.trim(),
-        TEL: $("comercialTel").value.trim(),
-        EMAIL: $("comercialEmail").value.trim(),
-        VOLUME: $("franquia").value.trim(),
-        MENSAL: soNumero($("valorMensal").value),
-        UNITARIO: valorUnitario(),
-        EXCEDENTE: soNumero($("valorExcedente").value)
-      };
+      var dados = montaDados(numero, ativos);
 
       nomePdf = dados.EMPRESA.replace(/[\\/:*?"<>|]/g, "") +
         "_Proposta AR Online " + numero.replace("/", "-");
