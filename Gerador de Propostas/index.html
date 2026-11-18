@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gerador de Propostas — AR Online</title>
+<style>
+  :root { --azul: #1f497d; --azul-claro: #2e5f9e; --fundo: #f2f5f9; --borda: #c9d4e2; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: var(--fundo); color: #262626; }
+  header { background: var(--azul); color: #fff; padding: 16px 28px; display: flex; align-items: center; gap: 16px; }
+  header .marca { height: 46px; width: auto; display: block; }
+  header h1 { margin: 0; font-size: 20px; font-weight: bold; }
+  header p { margin: 4px 0 0; font-size: 13px; opacity: .9; }
+  main { max-width: 860px; margin: 24px auto 60px; padding: 0 16px; }
+  fieldset { background: #fff; border: 1px solid var(--borda); border-radius: 8px; margin: 0 0 16px; padding: 16px 18px 18px; }
+  legend { font-size: 13px; font-weight: bold; color: var(--azul); text-transform: uppercase; letter-spacing: .4px; padding: 0 6px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+  .grid .full { grid-column: 1 / -1; }
+  label { display: block; font-size: 12px; font-weight: bold; color: #444; margin-bottom: 4px; }
+  input[type=text], input[type=email], input[type=tel], input[type=date], input[type=file], select {
+    width: 100%; padding: 8px 10px; font-size: 14px; border: 1px solid var(--borda); border-radius: 6px; background: #fff;
+  }
+  input:focus, select:focus { outline: 2px solid var(--azul-claro); outline-offset: -1px; }
+  .hint { font-size: 11px; color: #667; margin-top: 3px; }
+  .canais { display: flex; flex-wrap: wrap; gap: 10px 22px; }
+  .canais label { display: flex; align-items: center; gap: 7px; font-size: 14px; font-weight: normal; margin: 0; }
+  .canais input { width: 16px; height: 16px; }
+  .numero-box { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .numero-box strong { font-size: 18px; color: var(--azul); }
+  button { cursor: pointer; border: 0; border-radius: 6px; font-size: 14px; }
+  .btn-sec { background: #e3ebf5; color: var(--azul); padding: 8px 14px; font-weight: bold; }
+  .btn-sec:hover { background: #d2e0f0; }
+  .btn-gerar { background: var(--azul); color: #fff; font-size: 16px; font-weight: bold; padding: 14px 34px; width: 100%; }
+  .btn-gerar:hover { background: var(--azul-claro); }
+  .btn-gerar:disabled { background: #9db2c9; cursor: wait; }
+  #status { margin-top: 12px; font-size: 13px; min-height: 18px; }
+  #status.erro { color: #b00020; }
+  #status.ok { color: #1c6e32; }
+  #visor { position: fixed; inset: 0; z-index: 20; background: #1f497d; display: flex; flex-direction: column; }
+  #visor .barra { display: flex; gap: 14px; align-items: center; color: #fff; padding: 12px 20px; font-size: 14px; }
+  #visor .barra button { background: #fff; color: var(--azul); border: 0; border-radius: 6px; padding: 8px 14px; font-weight: bold; cursor: pointer; }
+  #visor .barra .fechar { margin-left: auto; background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.55); }
+  #visor iframe { flex: 1; width: 100%; border: 0; background: #d8dbe3; }
+  .editaveis { border-top: 1px dashed var(--borda); margin-top: 12px; padding-top: 12px; }
+  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <img class="marca" src="logo-ar.png" alt="AR Online">
+  <div>
+    <h1>Gerador de Propostas</h1>
+    <p>Preencha os campos e salve a proposta em PDF.</p>
+  </div>
+</header>
+<main>
+  <fieldset>
+    <legend>Número da proposta</legend>
+    <div class="numero-box">
+      <strong id="numeroPrev">OPT ____/____</strong>
+      <button type="button" class="btn-sec" id="btnPasta">Conectar pasta compartilhada</button>
+      <span class="hint" id="pastaStatus">Sem acesso à pasta: usando contador local deste navegador.</span>
+    </div>
+    <div class="editaveis">
+      <label for="numeroManual">Ajustar número (se necessário)</label>
+      <input type="text" id="numeroManual" placeholder="deixe vazio para usar o número automático">
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Dados do cliente</legend>
+    <div class="grid">
+      <div>
+        <label for="cliente">Nome do contato</label>
+        <input type="text" id="cliente" placeholder="Ex.: Maria Silva">
+      </div>
+      <div>
+        <label for="empresa">Empresa</label>
+        <input type="text" id="empresa" placeholder="Ex.: Clínica Exemplo Ltda.">
+      </div>
+      <div>
+        <label for="data">Data da proposta</label>
+        <input type="date" id="data">
+      </div>
+      <div>
+        <label for="logo">Logo do cliente (PNG, opcional)</label>
+        <input type="file" id="logo" accept="image/png,image/jpeg">
+        <div class="hint">Este modelo não leva logo do cliente na capa.</div>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Seus dados (comercial)</legend>
+    <div class="grid">
+      <div>
+        <label for="comercial">Nome</label>
+        <input type="text" id="comercial" placeholder="Ex.: José Abi">
+      </div>
+      <div>
+        <label for="comercialTel">Telefone</label>
+        <input type="tel" id="comercialTel" placeholder="Ex.: +55 (27) 99703-4911">
+      </div>
+      <div class="full">
+        <label for="comercialEmail">E-mail</label>
+        <input type="email" id="comercialEmail" placeholder="Ex.: abi@ar-online.com.br">
+        <div class="hint">Ficam salvos neste navegador para as próximas propostas.</div>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Canais cotados nesta proposta</legend>
+    <div class="canais">
+      <label><input type="checkbox" id="canalEmail" checked> AR-Email e AR-SMS</label>
+      <label><input type="checkbox" id="canalWhats"> AR-WhatsApp</label>
+      <label><input type="checkbox" id="canalVoz"> AR-Voz</label>
+      <label><input type="checkbox" id="canalCartas"> AR-Cartas</label>
+    </div>
+    <div class="hint">Os canais desmarcados saem da proposta (condições comerciais e, no caso do WhatsApp, também o bloco de campanha multicanal).</div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Plano AR-Email e AR-SMS</legend>
+    <div class="grid">
+      <div>
+        <label for="plano">Plano</label>
+        <select id="plano">
+          <option value="50">50 envios/mês</option>
+          <option value="100">100 envios/mês</option>
+          <option value="150">150 envios/mês</option>
+          <option value="250">250 envios/mês</option>
+          <option value="500">500 envios/mês</option>
+          <option value="750">750 envios/mês</option>
+          <option value="1000" selected>1.000 envios/mês</option>
+          <option value="1500">1.500 envios/mês</option>
+          <option value="2000">2.000 envios/mês</option>
+          <option value="5000">5.000 envios/mês</option>
+          <option value="7000">7.000 envios/mês</option>
+          <option value="10000">10.000 envios/mês</option>
+          <option value="15000">15.000 envios/mês</option>
+          <option value="20000">20.000 envios/mês</option>
+          <option value="25000">25.000 envios/mês</option>
+          <option value="30000">30.000 envios/mês</option>
+          <option value="45000">45.000 envios/mês</option>
+          <option value="60000">60.000 envios/mês</option>
+          <option value="80000">80.000 envios/mês</option>
+          <option value="100000">100.000 envios/mês</option>
+          <option value="150000">150.000 envios/mês</option>
+          <option value="200000">200.000 envios/mês</option>
+          <option value="250000">250.000 envios/mês</option>
+          <option value="300000">300.000 envios/mês</option>
+          <option value="350000">350.000 envios/mês</option>
+          <option value="400000">400.000 envios/mês</option>
+          <option value="450000">450.000 envios/mês</option>
+          <option value="500000">500.000 envios/mês</option>
+          <option value="550000">550.000 envios/mês</option>
+          <option value="600000">600.000 envios/mês</option>
+          <option value="750000">750.000 envios/mês</option>
+          <option value="800000">800.000 envios/mês</option>
+          <option value="850000">850.000 envios/mês</option>
+          <option value="900000">900.000 envios/mês</option>
+          <option value="950000">950.000 envios/mês</option>
+          <option value="1000000">1.000.000 ou mais envios/mês</option>
+          <option value="custom">Personalizado</option>
+        </select>
+      </div>
+      <div>
+        <label for="volume">Volume contratado</label>
+        <input type="text" id="volume">
+      </div>
+      <div>
+        <label for="valorMensal">Valor mensal</label>
+        <input type="text" id="valorMensal">
+      </div>
+      <div>
+        <label for="franquia">Franquia (ARs antes do excedente)</label>
+        <input type="text" id="franquia">
+      </div>
+      <div>
+        <label for="valorExcedente">Valor por AR excedente</label>
+        <input type="text" id="valorExcedente">
+      </div>
+    </div>
+    <div class="hint">Os valores vêm da tabela do plano escolhido e podem ser ajustados para a negociação.</div>
+  </fieldset>
+
+  <button type="button" class="btn-gerar" id="btnGerar">Nova Proposta — salvar PDF</button>
+  <div class="hint">A proposta abre nesta página. No destino, escolha Salvar como PDF e desmarque cabeçalhos e rodapés.</div>
+  <div id="status"></div>
+</main>
+
+  <script src="paginas.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

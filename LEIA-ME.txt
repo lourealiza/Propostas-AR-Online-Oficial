@@ -1,0 +1,33 @@
+GERADOR DE PROPOSTAS — AR ONLINE
+================================
+
+O QUE É
+-------
+Uma página que gera a proposta comercial já preenchida, só em PDF:
+número automático, dados do cliente, seus dados, canais cotados e
+valores do plano. O modelo visual é o de 12 páginas.
+
+COMO USAR
+---------
+1. Abra o site do gerador no Chrome ou no Edge. Também dá para abrir
+   o arquivo index.html desta pasta.
+2. Na primeira vez, clique em "Conectar pasta compartilhada" e escolha
+   esta pasta ("Gerador de Propostas"). Assim o número da proposta sai
+   do contador único (contador.json) e nunca se repete entre vendedores.
+   Se não conectar, o número sai de um contador local do seu navegador.
+3. Preencha os dados do cliente, seus dados, os canais cotados e o
+   plano. Os valores vêm prontos da tabela e podem ser ajustados.
+4. Clique em "Nova Proposta — salvar PDF". A proposta abre na mesma
+   página. Clique em "Salvar PDF". No destino, escolha "Salvar como PDF"
+   e desmarque cabeçalhos e rodapés. O nome sugerido é
+   "Empresa_Proposta AR Online OPT 0001-2026".
+5. Revise o documento antes de enviar ao cliente.
+
+OBSERVAÇÕES
+-----------
+- O número segue o padrão OPT 0001/2026 e reinicia a cada ano.
+- Se precisar usar um número específico, preencha "Ajustar número".
+- Este modelo não leva logo do cliente na capa.
+- Seus dados de comercial ficam salvos no navegador para a próxima.
+- O arquivo paginas.js é o modelo visual: não apague e não renomeie.
+- A proposta sai somente em PDF. Não há mais arquivo Word.
