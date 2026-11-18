@@ -9,8 +9,10 @@ valores do plano. O modelo visual é o de 12 páginas.
 
 COMO USAR
 ---------
-1. Abra o site do gerador no Chrome ou no Edge. Também dá para abrir
-   o arquivo index.html desta pasta.
+1. Abra o site do gerador no Chrome ou no Edge:
+   https://lourealiza.github.io/Propostas-AR-Online-Oficial/
+   Na máquina local, use o Iniciar.bat (CRM e contador compartilhado).
+   Também dá para abrir o arquivo index.html desta pasta.
 2. Na primeira vez, clique em "Conectar pasta compartilhada" e escolha
    esta pasta ("Gerador de Propostas"). Assim o número da proposta sai
    do contador único (contador.json) e nunca se repete entre vendedores.

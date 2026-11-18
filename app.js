@@ -636,10 +636,15 @@
     return partes.join(" ");
   }
 
+  function servidorLocalAtivo() {
+    var h = location.hostname;
+    return location.protocol === "http:" && (h === "127.0.0.1" || h === "localhost");
+  }
+
   async function consultaCrm(param, valor) {
     var aviso = $("crmStatus");
-    if (location.protocol !== "http:") {
-      aviso.textContent = "Abra o gerador pelo Iniciar.bat para buscar no CRM.";
+    if (!servidorLocalAtivo()) {
+      aviso.textContent = "A busca no CRM só funciona pelo Iniciar.bat na sua máquina. Neste site, preencha os campos à mão.";
       return;
     }
     var btn = $("btnCrm");
